@@ -152,6 +152,9 @@ const appointmentSlice = createSlice({
     clearContacts: (state) => {
       state.items = [];
     },
+    clearPeopleSuggestions: (state) => {
+      state.peopleSuggestions = [];
+    },
     clearError: (state) => {
       state.error = null;
     },
@@ -285,7 +288,7 @@ const appointmentSlice = createSlice({
   },
 });
 
-export const { clearError, clearAppointments, optimisticUpdateAppointment, clearContacts  } = appointmentSlice.actions;
+export const { clearError, clearAppointments, optimisticUpdateAppointment, clearContacts, clearPeopleSuggestions  } = appointmentSlice.actions;
 
 // Selectors
 export const selectAllAppointments = (state) => state.appointments.items;

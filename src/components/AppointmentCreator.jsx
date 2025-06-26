@@ -4,7 +4,7 @@ import { DatePicker } from './DateTimePicker';
 import { SimpleTimePicker } from './SimpleTimePicker';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
-import { clearContacts, createAppointment, searchContacts, searchPeople, selectAppointmentsLoading } from '../store/slices/appointmentSlice';
+import { clearContacts, clearPeopleSuggestions, createAppointment, searchContacts, searchPeople, selectAppointmentsLoading } from '../store/slices/appointmentSlice';
 import { setActiveTab, addNotification } from '../store/slices/uiSlice';
 import { useSearchParams } from 'react-router-dom';
 import debounce from 'lodash.debounce';
@@ -215,22 +215,26 @@ const [personSearch, setPersonSearch] = useState('');
               </div>
 
               {/* Suggestions List */}
-              {isContact && contactSearch && contacts?.length > 0 && (
-                <ul className="absolute z-10 bg-white w-full border border-gray-200 rounded mt-1 shadow">
-                  {contacts.map((contact) => (
-                    <li
-                      key={contact.id}
-                      onClick={() => {
-                        setContactSearch(`${contact.first_name} ${contact.last_name || ''}`);
-                        setSelectedContactId(contact.contact_id);
-                        setIsContact(false);
-                        dispatch(clearContacts());
-                      }}
-                      className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
-                    >
-                      {contact?.first_name} {contact.last_name}
-                    </li>
-                  ))}
+              {isContact && contactSearch && (
+                <ul className="absolute z-30 bg-white w-full border border-gray-200 rounded mt-1 shadow">
+                  {contacts?.length > 0 ? (
+                    contacts.map((contact) => (
+                      <li
+                        key={contact.id}
+                        onClick={() => {
+                          setContactSearch(`${contact.first_name} ${contact.last_name || ''}`);
+                          setSelectedContactId(contact.contact_id);
+                          setIsContact(false);
+                          dispatch(clearContacts());
+                        }}
+                        className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                      >
+                        {contact?.first_name} {contact?.last_name}
+                      </li>
+                    ))
+                  ) : (!contactsSearchLoading &&
+                    <li className="px-4 py-2 text-gray-500">No contacts found</li>
+                  )}
                 </ul>
               )}
             </div>
@@ -300,23 +304,28 @@ const [personSearch, setPersonSearch] = useState('');
               </button> */}
 
               {/* Suggestions */}
-              {personSearch && peopleSuggestions.length > 0 && (
+              {personSearch && (
                 <ul className="absolute top-full left-0 z-10 bg-white w-full border border-gray-200 rounded mt-1 shadow">
-                  {peopleSuggestions.map((person) => (
-                    <li
-                      key={person.id}
-                      onClick={() => {
-                        if (!assignedPeopleUserIDs.includes(person?.user_id)) {
-                          setAssignedPeople([...assignedPeople, person]);
-                          setAssignedPeopleUserIDs([...assignedPeopleUserIDs, person.user_id]);
-                        }
-                        setPersonSearch('');
-                      }}
-                      className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
-                    >
-                      {person?.name}
-                    </li>
-                  ))}
+                  {peopleSuggestions.length > 0 ? (
+                    peopleSuggestions.map((person) => (
+                      <li
+                        key={person.id}
+                        onClick={() => {
+                          if (!assignedPeopleUserIDs.includes(person?.user_id)) {
+                            setAssignedPeople([...assignedPeople, person]);
+                            setAssignedPeopleUserIDs([...assignedPeopleUserIDs, person.user_id]);
+                          }
+                          setPersonSearch('');
+                          dispatch(clearPeopleSuggestions());
+                        }}
+                        className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                      >
+                        {person?.name}
+                      </li>
+                    ))
+                  ) : (!peopleSuggestionsLoading &&
+                    <li className="px-4 py-2 text-gray-500">No people found</li>
+                  )}
                 </ul>
               )}
             </div>
