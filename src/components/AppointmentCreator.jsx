@@ -37,6 +37,7 @@ const [personSearch, setPersonSearch] = useState('');
   useEffect(()=>{
     setTitle('')
     setContactSearch('')
+    setAssignedPeopleUserIDs([])
     dispatch(clearContacts());
     dispatch(clearPeopleSuggestions());
   },[success])
