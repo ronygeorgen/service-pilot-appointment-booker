@@ -161,9 +161,6 @@ const [personSearch, setPersonSearch] = useState('');
     }
   };
 
-  console.log(assignedPeopleUserIDs);
-  
-
   return (
     <div className="max-w-2xl mx-auto">
       <div className="bg-white rounded-xl shadow-lg p-8">

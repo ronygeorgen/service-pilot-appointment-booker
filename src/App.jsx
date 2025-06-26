@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Calendar, Settings, Plus, Users, LogOut } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectIsAuthenticated, logoutUser, selectAuthLoading } from './store/slices/authSlice';
@@ -12,8 +12,17 @@ import NotificationToast from './components/NotificationToast';
 function App() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const is_auth = useSelector(selectIsAuthenticated);
   const authLoading = useSelector(selectAuthLoading);
+
+  const [params] = useSearchParams();
+  const locationId = params.get('locationId');
+
+  const isIframed = window.self !== window.top;
+  const isAuthenticated = is_auth || (isIframed && locationId === 'b8qvo7VooP3JD3dIZU42');
+
+  console.log(isAuthenticated, 'isAuthenticated');
+  
 
   // Redirect logic
   useEffect(() => {
@@ -61,9 +70,9 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+      <div className="bg-white shadow-sm border-gray-200 fixed w-full z-50">
+         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl">
                 <Calendar className="w-8 h-8 text-white" />
@@ -89,56 +98,58 @@ function App() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex gap-8">
-            <button
-              onClick={() => navigate('/create')}
-              className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                window.location.pathname === '/create'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Plus className="w-4 h-4" />
-              Create Appointment
-            </button>
-            <button
-              onClick={() => navigate('/manage')}
-              className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                window.location.pathname === '/manage'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Settings className="w-4 h-4" />
-              Manage Appointments
-            </button>
-            <button
-              onClick={() => navigate('/users')}
-              className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                window.location.pathname === '/users'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              Users List
-            </button>
-          </nav>
+       
+        {/* Navigation Tabs */}
+        <div className="bg-white border-b border-gray-200 border-t">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav className="flex gap-8">
+              <button
+                onClick={() => navigate(`/create?locationId=${locationId}`)}
+                className={`flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  window.location.pathname === '/create'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Plus className="w-4 h-4" />
+                Create Appointment
+              </button>
+              <button
+                onClick={() => navigate(`/manage?locationId=${locationId}`)}
+                className={`flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  window.location.pathname === '/manage'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Settings className="w-4 h-4" />
+                Manage Appointments
+              </button>
+              <button
+                onClick={() => navigate(`/users?locationId=${locationId}`)}
+                className={`flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  window.location.pathname === '/users'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                Users List
+              </button>
+            </nav>
+          </div>
         </div>
       </div>
 
+
+
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-36">
         <Routes>
           <Route path="/create" element={<AppointmentCreator />} />
           <Route path="/manage" element={<AppointmentManager />} />
           <Route path="/users" element={<UsersList />} />
-          <Route path="*" element={<Navigate to="/create" replace />} />
+          <Route path="*" element={<Navigate to={`/create?locationId=${locationId}`}replace />} />
         </Routes>
       </div>
 
