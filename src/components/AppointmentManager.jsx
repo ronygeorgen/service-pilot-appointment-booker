@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, Edit3, Trash2, CheckCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
@@ -8,7 +8,11 @@ import {
   updateAppointment,
   deleteAppointment,
   deleteRecurringSeries,
-  optimisticUpdateAppointment
+  optimisticUpdateAppointment,
+  fetchRecurringGroups,
+  fetchRecurringGroupAppointments,
+  deleteSingleAppointmentAPI,
+  loadAllRecurringAppointments
 } from '../store/slices/appointmentSlice';
 import { addNotification } from '../store/slices/uiSlice';
 
@@ -21,13 +25,25 @@ export const AppointmentManager = () => {
   const [editForm, setEditForm] = useState({});
   const [expandedGroups, setExpandedGroups] = useState(new Set());
 
-  const toggleGroupExpansion = (groupId) => {
+  // Load recurring groups on component mount
+  useEffect(() => {
+    dispatch(loadAllRecurringAppointments());
+    dispatch(fetchRecurringGroups());
+  }, [dispatch]);
+
+  const toggleGroupExpansion = async (groupId) => {
     const newExpanded = new Set(expandedGroups);
+    
     if (newExpanded.has(groupId)) {
       newExpanded.delete(groupId);
     } else {
+      // Only fetch if we haven't loaded this group's appointments yet
+      if (!recurringGroups[groupId]?.appointments?.length) {
+        await dispatch(fetchRecurringGroupAppointments(groupId));
+      }
       newExpanded.add(groupId);
     }
+    
     setExpandedGroups(newExpanded);
   };
 
@@ -86,28 +102,45 @@ export const AppointmentManager = () => {
     }
   };
 
-  const handleDeleteAppointment = async (id) => {
-    if (window.confirm('Are you sure you want to delete this appointment?')) {
-      try {
-        await dispatch(deleteAppointment(id)).unwrap();
-        
-        dispatch(addNotification({
-          type: 'success',
-          message: 'Appointment deleted successfully'
-        }));
-      } catch (error) {
-        dispatch(addNotification({
-          type: 'error',
-          message: error || 'Failed to delete appointment'
-        }));
+ const handleDeleteAppointment = async (id, isRecurring = false) => {
+    // if (isRecurring) {
+    //   if (window.confirm('Are you sure you want to delete this entire recurring series?')) {
+    //     try {
+    //       await dispatch(deleteRecurringSeries(id)).unwrap();
+    //       dispatch(addNotification({
+    //         type: 'success',
+    //         message: 'Recurring series deleted successfully'
+    //       }));
+    //     } catch (error) {
+    //       dispatch(addNotification({
+    //         type: 'error',
+    //         message: error || 'Failed to delete recurring series'
+    //       }));
+    //     }
+    //   }
+    // } else {
+      if (window.confirm('Are you sure you want to delete this appointment?')) {
+        try {
+          await dispatch(deleteSingleAppointmentAPI(id)).unwrap();
+          dispatch(addNotification({
+            type: 'success',
+            message: 'Appointment deleted successfully'
+          }));
+        } catch (error) {
+          dispatch(addNotification({
+            type: 'error',
+            message: error || 'Failed to delete appointment'
+          }));
+        }
       }
-    }
+    // }
   };
 
   const handleDeleteRecurringSeries = async (recurringId) => {
     if (window.confirm('Are you sure you want to delete this entire recurring series? This will delete all appointments in the series.')) {
       try {
         await dispatch(deleteRecurringSeries(recurringId)).unwrap();
+        dispatch(fetchRecurringGroups()); // Refresh the list
         
         dispatch(addNotification({
           type: 'success',
@@ -132,8 +165,15 @@ export const AppointmentManager = () => {
     });
   };
 
-  const formatTime = (timeString) => {
-    const [hours, minutes] = timeString.split(':');
+const formatTime = (timeString) => {
+  if (!timeString) return 'No time set';
+  
+  try {
+    // Handle both "HH:MM" format and ISO time strings
+    const [hours, minutes] = timeString.includes('T') 
+      ? timeString.split('T')[1].substring(0, 5).split(':')
+      : timeString.split(':');
+    
     const date = new Date();
     date.setHours(parseInt(hours), parseInt(minutes));
     return date.toLocaleTimeString('en-US', { 
@@ -141,7 +181,11 @@ export const AppointmentManager = () => {
       minute: '2-digit',
       hour12: true 
     });
-  };
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return 'Invalid time';
+  }
+};
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -224,7 +268,7 @@ export const AppointmentManager = () => {
             </div>
             <div className="flex items-center gap-2 text-gray-600">
               <Users className="w-4 h-4" />
-              <span className="text-sm">{appointment.assignedPeople.join(', ')}</span>
+              <span className="text-sm">{Array.isArray(appointment.assignedPeople) ? appointment.assignedPeople.join(', ') : appointment.assignedPeople}</span>
             </div>
           </div>
 
@@ -252,12 +296,16 @@ export const AppointmentManager = () => {
               {appointment.status === 'completed' ? 'Undo' : 'Complete'}
             </button>
             <button
-              onClick={() => handleDeleteAppointment(appointment.id)}
+              onClick={() => handleDeleteAppointment(
+                appointment.id, 
+
+                isInGroup
+              )}
               disabled={loading}
               className="flex items-center gap-1 px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
             >
               <Trash2 className="w-4 h-4" />
-              Delete
+              {isInGroup ? 'Delete This Occurrence' : 'Delete'}
             </button>
           </div>
         </>
@@ -295,7 +343,7 @@ export const AppointmentManager = () => {
                   </span>
                   <span className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
-                    {group.assignedPeople.join(', ')}
+                    {Array.isArray(group.assignedPeople) ? group.assignedPeople.join(', ') : group.assignedPeople}
                   </span>
                 </div>
               </div>
@@ -325,7 +373,15 @@ export const AppointmentManager = () => {
         
         {isExpanded && (
           <div className="px-6 pb-6 space-y-3 border-t border-gray-100">
-            {group.appointments.map(appointment => renderAppointmentCard(appointment, true))}
+            {group.appointments.map(appointment => renderAppointmentCard({
+              ...appointment,
+              id: appointment.id,
+              date: appointment.start_time ? appointment.start_time.split('T')[0] : appointment.date,
+              time: appointment.start_time ? appointment.start_time.split('T')[1].substring(0, 5) : appointment.time,
+              assignedPeople: appointment.assigned_to || appointment.assignedPeople,
+              status: appointment.status || 'scheduled',
+              recurringId: group.id
+            }, true))}
           </div>
         )}
       </div>
