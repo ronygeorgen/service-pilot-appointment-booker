@@ -23,10 +23,10 @@ export const updateUserCalendar = createAsyncThunk(
         { calendar_id: calendarId }
       );
       
-      // Return both the userId and the updated calendar_id from the response
+      // Return the exact fields from the API response
       return { 
-        userId, 
-        calendarId: response.data.calendar_id || calendarId 
+        user_id: response.data.user_id, 
+        calendar_id: response.data.calendar_id 
       };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update calendar');
@@ -65,15 +65,15 @@ const userSlice = createSlice({
         state.error = null;
       })
       .addCase(updateUserCalendar.fulfilled, (state, action) => {
-      state.loading = false;
-      const { userId, calendarId } = action.payload;
-      
-      // Find and update the specific user
-      const userIndex = state.items.findIndex(user => user.user_id === userId);
-      if (userIndex !== -1) {
-        state.items[userIndex].calendar_id = calendarId;
-      }
-    })
+        state.loading = false;
+        const { user_id, calendar_id } = action.payload; // Match the API response
+        
+        // Find and update the specific user
+        const userIndex = state.items.findIndex(user => user.user_id === user_id);
+        if (userIndex !== -1) {
+          state.items[userIndex].calendar_id = calendar_id;
+        }
+      })
       .addCase(updateUserCalendar.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
