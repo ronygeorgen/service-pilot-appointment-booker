@@ -100,7 +100,7 @@ export const loadAppointments = createAsyncThunk(
 const generateRecurringAppointments = (appointmentData) => {
   const appointments = [];
   const baseDate = new Date(appointmentData.date);
-  const recurringId = crypto.randomUUID();
+  const recurringId = Math.floor(1000000 + Math.random() * 9000000);
   const { recurringPattern } = appointmentData;
 
   for (let i = 0; i < recurringPattern.repeatCount; i++) {
@@ -119,7 +119,7 @@ const generateRecurringAppointments = (appointmentData) => {
     }
 
     appointments.push({
-      id: crypto.randomUUID(),
+      id: Math.floor(1000000 + Math.random() * 9000000),
       title: appointmentData.title,
       date: appointmentDate.toISOString().split('T')[0],
       time: appointmentData.time,
