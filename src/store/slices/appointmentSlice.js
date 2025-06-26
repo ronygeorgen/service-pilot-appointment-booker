@@ -1,24 +1,37 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createAppointmentService, searchContactsService, searchPeopleService } from '../../services/appointments_services';
+
+export const searchContacts = createAsyncThunk(
+  'contacts/searchContacts',
+  async (query, { rejectWithValue }) => {
+    try {
+      const response = await searchContactsService(query);
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response.data || 'Failed to fetch contacts');
+    }
+  }
+);
+
+export const searchPeople = createAsyncThunk(
+  'appointments/searchPeople',
+  async (query, { rejectWithValue }) => {
+    try {
+      const response = await searchPeopleService(query);
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || 'Failed to fetch people');
+    }
+  }
+);
 
 // Async thunks for appointment operations
 export const createAppointment = createAsyncThunk(
   'appointments/createAppointment',
   async (appointmentData, { rejectWithValue }) => {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      if (appointmentData.isRecurring) {
-        return generateRecurringAppointments(appointmentData);
-      } else {
-        const appointment = {
-          id: crypto.randomUUID(),
-          ...appointmentData,
-          status: 'scheduled',
-          createdAt: new Date().toISOString(),
-        };
-        return [appointment];
-      }
+      const response = await createAppointmentService(appointmentData);
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -116,6 +129,7 @@ const generateRecurringAppointments = (appointmentData) => {
       recurringPattern,
       status: 'scheduled',
       createdAt: new Date().toISOString(),
+      success:false,
     });
   }
 
@@ -125,12 +139,19 @@ const generateRecurringAppointments = (appointmentData) => {
 const appointmentSlice = createSlice({
   name: 'appointments',
   initialState: {
+    contacts:[],
+    contactsSearchLoading:false,
+    peopleSuggestions: [],
+    peopleSuggestionsLoading:false,
     items: [],
     loading: false,
     error: null,
     lastUpdated: null,
   },
   reducers: {
+    clearContacts: (state) => {
+      state.items = [];
+    },
     clearError: (state) => {
       state.error = null;
     },
@@ -156,8 +177,9 @@ const appointmentSlice = createSlice({
       })
       .addCase(createAppointment.fulfilled, (state, action) => {
         state.loading = false;
-        state.items.push(...action.payload);
+        state.items.push(...action.payload?.appointments);
         state.lastUpdated = new Date().toISOString();
+        state.success=true;
         // Save to localStorage
         localStorage.setItem('appointments', JSON.stringify(state.items));
       })
@@ -234,11 +256,36 @@ const appointmentSlice = createSlice({
       .addCase(loadAppointments.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to load appointments';
-      });
+      })
+
+      .addCase(searchContacts.pending, (state) => {
+        state.contactsSearchLoading = true;
+        state.error = null;
+      })
+      .addCase(searchContacts.fulfilled, (state, action) => {
+        state.contactsSearchLoading = false;
+        state.contacts = action.payload?.results;
+      })
+      .addCase(searchContacts.rejected, (state, action) => {
+        state.contactsSearchLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(searchPeople.pending, (state) => {
+        state.peopleSuggestionsLoading = true;
+        state.error = null;
+      })
+      .addCase(searchPeople.fulfilled, (state, action) => {
+        state.peopleSuggestionsLoading = false;
+        state.peopleSuggestions = action.payload?.results;
+      })
+      .addCase(searchPeople.rejected, (state, action) => {
+        state.peopleSuggestionsLoading = false;
+        state.error = action.payload;
+      })
   },
 });
 
-export const { clearError, clearAppointments, optimisticUpdateAppointment } = appointmentSlice.actions;
+export const { clearError, clearAppointments, optimisticUpdateAppointment, clearContacts  } = appointmentSlice.actions;
 
 // Selectors
 export const selectAllAppointments = (state) => state.appointments.items;

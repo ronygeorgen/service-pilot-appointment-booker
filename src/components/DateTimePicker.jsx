@@ -50,7 +50,7 @@ export const DatePicker = ({ value, onChange, className = '' }) => {
   };
 
   const handleDateSelect = (date) => {
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = date.toLocaleDateString('en-CA');
     onChange(dateString);
     setIsOpen(false);
   };
@@ -142,7 +142,7 @@ export const DatePicker = ({ value, onChange, className = '' }) => {
                 key={index}
                 type="button"
                 onClick={() => date && handleDateSelect(date)}
-                disabled={!date}
+                disabled={!date || date < new Date(new Date().setHours(0, 0, 0, 0))}
                 className={`
                   h-8 w-8 rounded-md text-xs font-medium transition-colors
                   ${!date ? 'invisible' : ''}

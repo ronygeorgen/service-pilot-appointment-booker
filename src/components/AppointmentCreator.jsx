@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Calendar, Clock, Users, Repeat } from 'lucide-react';
 import { DatePicker } from './DateTimePicker';
 import { SimpleTimePicker } from './SimpleTimePicker';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
-import { createAppointment, selectAppointmentsLoading } from '../store/slices/appointmentSlice';
+import { clearContacts, createAppointment, searchContacts, searchPeople, selectAppointmentsLoading } from '../store/slices/appointmentSlice';
 import { setActiveTab, addNotification } from '../store/slices/uiSlice';
+import { useSearchParams } from 'react-router-dom';
+import debounce from 'lodash.debounce';
+import { DateTime } from 'luxon';
 
 export const AppointmentCreator = () => {
   const dispatch = useAppDispatch();
@@ -15,13 +18,52 @@ export const AppointmentCreator = () => {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [assignedPeople, setAssignedPeople] = useState([]);
+  const [assignedPeopleUserIDs, setAssignedPeopleUserIDs] = useState([]);
   const [newPerson, setNewPerson] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringPattern, setRecurringPattern] = useState({
     frequency: 'weekly',
-    interval: 1,
+    // interval: 1,
     repeatCount: 10,
   });
+
+  const [isContact, setIsContact] = useState(false)
+  const [selectedContactId, setSelectedContactId] = useState(null);
+  const [contactSearch, setContactSearch] = useState('');
+  const {peopleSuggestions, contacts, contactsSearchLoading, peopleSuggestionsLoading, success} = useAppSelector(state => state.appointments);
+
+const [personSearch, setPersonSearch] = useState('');
+
+  useEffect(()=>{
+    setTitle('')
+    setContactSearch('')
+  },[success])
+
+  // Debounce API call
+  useEffect(() => {
+    if (!contactId && contactSearch.length > 1) {
+      debouncedSearch(contactSearch);
+    }
+  }, [contactSearch]);
+
+  const debouncedSearch = debounce((query) => {
+    dispatch(searchContacts(query));
+  }, 300); // 300ms debounce
+
+  useEffect(() => {
+    if (personSearch.length > 1) {
+      debouncedPeopleSearch(personSearch);
+    }
+  }, [personSearch]);
+
+  const debouncedPeopleSearch = debounce((query) => {
+    dispatch(searchPeople(query));
+  }, 300);
+
+
+
+  const [params] = useSearchParams();
+  const contactId = params.get('contactId')
 
   const handleAddPerson = () => {
     if (newPerson.trim() && !assignedPeople.includes(newPerson.trim())) {
@@ -32,6 +74,7 @@ export const AppointmentCreator = () => {
 
   const handleRemovePerson = (person) => {
     setAssignedPeople(assignedPeople.filter(p => p !== person));
+    setAssignedPeopleUserIDs(assignedPeopleUserIDs.filter(user_id => user_id !== person.user_id));
   };
 
   const handleSubmit = async (e) => {
@@ -46,14 +89,42 @@ export const AppointmentCreator = () => {
       return;
     }
 
+    if (!title || !date || !time || assignedPeople.length === 0 || (!selectedContactId && !contactId)) {
+      dispatch(addNotification({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please fill in all required fields including contact'
+      }));
+      return;
+    }
+
+    const start = DateTime.fromFormat(
+      `${date} ${time}`,
+      'yyyy-MM-dd HH:mm',
+      { zone: 'America/Chicago' }
+    );
+
+    const startDateTime = start.toUTC().toISO();
+    const endDateTime = start.plus({ minutes: 30 }).toUTC().toISO();
+
     const appointmentData = {
       title,
-      date,
-      time,
-      assignedPeople: [...assignedPeople],
-      isRecurring,
-      recurringPattern: isRecurring ? recurringPattern : undefined,
+      startDateTime,
+      endDateTime,
+      locationId:'b8qvo7VooP3JD3dIZU42',
+      contactId: selectedContactId || contactId,
+      userIds: [...assignedPeopleUserIDs],
+      type: isRecurring ? 'recurring' : 'single',
+        ...(isRecurring && {
+          interval: recurringPattern.frequency,  // renamed
+          count: recurringPattern.repeatCount,   // renamed
+        }),
     };
+
+    dispatch(createAppointment(appointmentData));
+
+    console.log(appointmentData, 'appointmentData');
+    
 
     try {
       await dispatch(createAppointment(appointmentData)).unwrap();
@@ -75,7 +146,7 @@ export const AppointmentCreator = () => {
       setIsRecurring(false);
       setRecurringPattern({
         frequency: 'weekly',
-        interval: 1,
+        // interval: 1,
         repeatCount: 10,
       });
 
@@ -89,6 +160,9 @@ export const AppointmentCreator = () => {
       }));
     }
   };
+
+  console.log(assignedPeopleUserIDs);
+  
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -116,6 +190,51 @@ export const AppointmentCreator = () => {
               disabled={loading}
             />
           </div>
+
+          {!contactId && (
+            <div className="relative">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Contact
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={contactSearch}
+                  onChange={(e) =>{ setContactSearch(e.target.value); setIsContact(true);}}
+                  className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  placeholder="Search contact..."
+                  required
+                />
+
+                {/* Spinner on the right inside input */}
+                {contactsSearchLoading && (
+                  <div className="absolute top-1/2 right-3 transform -translate-y-1/2">
+                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+              </div>
+
+              {/* Suggestions List */}
+              {isContact && contactSearch && contacts?.length > 0 && (
+                <ul className="absolute z-10 bg-white w-full border border-gray-200 rounded mt-1 shadow">
+                  {contacts.map((contact) => (
+                    <li
+                      key={contact.id}
+                      onClick={() => {
+                        setContactSearch(`${contact.first_name} ${contact.last_name || ''}`);
+                        setSelectedContactId(contact.contact_id);
+                        setIsContact(false);
+                        dispatch(clearContacts());
+                      }}
+                      className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                    >
+                      {contact?.first_name} {contact.last_name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {/* Date and Time */}
           <div className="grid md:grid-cols-2 gap-4">
@@ -148,34 +267,68 @@ export const AppointmentCreator = () => {
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Assigned People *
             </label>
-            <div className="flex gap-2 mb-3">
-              <input
-                type="text"
-                value={newPerson}
-                onChange={(e) => setNewPerson(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddPerson())}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="Add person name"
-                disabled={loading}
-              />
-              <button
+            <div className="flex gap-2 mb-3 relative">
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  value={personSearch}
+                  onChange={(e) => {
+                    setPersonSearch(e.target.value);
+                    setNewPerson(e.target.value);
+                  }}
+                  className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  placeholder="Search and add person"
+                />
+
+                {/* Spinner for person search */}
+                {peopleSuggestionsLoading && (
+                  <div className="absolute top-1/2 right-3 transform -translate-y-1/2">
+                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+              </div>
+              {/* <button
                 type="button"
-                onClick={handleAddPerson}
+                onClick={() => {
+                  handleAddPerson();
+                  setPersonSearch('');
+                }}
                 disabled={loading}
                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add
-              </button>
+              </button> */}
+
+              {/* Suggestions */}
+              {personSearch && peopleSuggestions.length > 0 && (
+                <ul className="absolute top-full left-0 z-10 bg-white w-full border border-gray-200 rounded mt-1 shadow">
+                  {peopleSuggestions.map((person) => (
+                    <li
+                      key={person.id}
+                      onClick={() => {
+                        if (!assignedPeopleUserIDs.includes(person?.user_id)) {
+                          setAssignedPeople([...assignedPeople, person]);
+                          setAssignedPeopleUserIDs([...assignedPeopleUserIDs, person.user_id]);
+                        }
+                        setPersonSearch('');
+                      }}
+                      className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                    >
+                      {person?.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             {assignedPeople.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {assignedPeople.map((person) => (
                   <span
-                    key={person}
+                    key={person?.user_id}
                     className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
                   >
                     <Users className="w-4 h-4" />
-                    {person}
+                    {person?.name}
                     <button
                       type="button"
                       onClick={() => handleRemovePerson(person)}
@@ -228,7 +381,7 @@ export const AppointmentCreator = () => {
                       <option value="monthly">Monthly</option>
                     </select>
                   </div>
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Every
                     </label>
@@ -244,10 +397,10 @@ export const AppointmentCreator = () => {
                       disabled={loading}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
                     />
-                  </div>
+                  </div> */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Repeat Count
+                      Count
                     </label>
                     <input
                       type="number"
