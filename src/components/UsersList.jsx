@@ -21,40 +21,35 @@ export const UsersList = () => {
     dispatch(loadUsers());
   }, [dispatch]);
 
-  useEffect(() => {
-  console.log('Current editing state:', editingCalendarId);
-}, [editingCalendarId]);
-
   const handleEditCalendar = (user_id, currentCalendarId) => {
     setEditingCalendarId(user_id);
     setCalendarIdInput(currentCalendarId || '');
   };
 
-const handleSaveCalendar = async (user_id) => {
-    console.log('Saving calendar for user:', user_id, 'with ID:', calendarIdInput);
-  try {
-    const result = await dispatch(updateUserCalendar({ 
-      userId: user_id, 
-      calendarId: calendarIdInput.trim() 
-    })).unwrap();
-    console.log('Update successful:', result);
-    dispatch(addNotification({
-      type: 'success',
-      message: 'Calendar ID updated successfully'
-    }));
-    
-    // Force clear editing state regardless of response
-    setEditingCalendarId(null);
-    setCalendarIdInput('');
-    
-  } catch (error) {
-    console.error('Update failed:', error);
-    dispatch(addNotification({
-      type: 'error',
-      message: error || 'Failed to update calendar ID'
-    }));
-  }
-};
+  const handleSaveCalendar = async (user_id) => {
+    try {
+      const result = await dispatch(updateUserCalendar({ 
+        userId: user_id, 
+        calendarId: calendarIdInput.trim() 
+      })).unwrap();
+      
+      dispatch(addNotification({
+        type: 'success',
+        message: 'Calendar ID updated successfully'
+      }));
+      
+      // Clear the editing state
+      setEditingCalendarId(null);
+      setCalendarIdInput('');
+      
+      // No need to reload users - the Redux store is already updated
+    } catch (error) {
+      dispatch(addNotification({
+        type: 'error',
+        message: error || 'Failed to update calendar ID'
+      }));
+    }
+  };
 
   const renderCalendarStatus = (user) => {
     if (editingCalendarId === user.user_id) {
