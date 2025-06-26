@@ -1,16 +1,15 @@
-import { StrictMode } from 'react';
+// main.jsx
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter as Router } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './store';
-import App from './App.jsx';
+import App from './App';
 import './index.css';
-import './services/request_interceptor.js'
-import './services/response_interceptor.js'
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
     <Provider store={store}>
-      <App />
+      <Router>
+        <App />
+      </Router>
     </Provider>
-  </StrictMode>
 );

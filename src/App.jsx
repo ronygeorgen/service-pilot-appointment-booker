@@ -1,47 +1,63 @@
 import React, { useEffect } from 'react';
-import { Calendar, Settings, Plus } from 'lucide-react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Calendar, Settings, Plus, Users, LogOut } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectIsAuthenticated, logoutUser, selectAuthLoading } from './store/slices/authSlice';
+import { LoginPage } from './components/LoginPage';
 import { AppointmentCreator } from './components/AppointmentCreator';
 import { AppointmentManager } from './components/AppointmentManager';
-import { SettingsMenu } from './components/SettingsMenu';
+import { UsersList } from './components/UsersList';
 import NotificationToast from './components/NotificationToast';
-import { useAppDispatch } from './hooks/useAppDispatch';
-import { useAppSelector } from './hooks/useAppSelector';
-import { 
-  selectActiveTab, 
-  selectShowSettings, 
-  setActiveTab, 
-  setShowSettings 
-} from './store/slices/uiSlice';
-import { 
-  selectAllAppointments, 
-  selectAppointmentsLoading,
-  loadAppointments 
-} from './store/slices/appointmentSlice';
 
 function App() {
-  const dispatch = useAppDispatch();
-  const activeTab = useAppSelector(selectActiveTab);
-  const showSettings = useAppSelector(selectShowSettings);
-  const appointments = useAppSelector(selectAllAppointments);
-  const loading = useAppSelector(selectAppointmentsLoading);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const authLoading = useSelector(selectAuthLoading);
 
-  // Load appointments on app start
+  // Redirect logic
   useEffect(() => {
-    dispatch(loadAppointments());
-  }, [dispatch]);
+    if (!isAuthenticated && window.location.pathname !== '/login') {
+      navigate('/login');
+    } else if (isAuthenticated && window.location.pathname === '/login') {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
-  const handleTabChange = (tab) => {
-    dispatch(setActiveTab(tab));
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
-  const handleToggleSettings = () => {
-    dispatch(setShowSettings(!showSettings));
-  };
+  // Loading state
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="p-4 bg-white rounded-2xl shadow-lg mb-4">
+            <Calendar className="w-12 h-12 text-blue-600 mx-auto animate-pulse" />
+          </div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleCloseSettings = () => {
-    dispatch(setShowSettings(false));
-  };
+  // Unauthenticated state
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
 
+  // Authenticated state
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
@@ -59,26 +75,17 @@ function App() {
             </div>
 
             <div className="flex items-center gap-4">
-              {loading && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                  Loading...
-                </div>
-              )}
-              <span className="text-sm text-gray-600">
-                {appointments.length} appointment{appointments.length !== 1 ? 's' : ''}
-              </span>
-              <div className="relative">
-                <button
-                  onClick={handleToggleSettings}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <Settings className="w-6 h-6" />
-                </button>
-                {showSettings && (
-                  <SettingsMenu onClose={handleCloseSettings} />
-                )}
-              </div>
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                disabled={authLoading}
+                className={`flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors font-medium text-sm ${
+                  authLoading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <LogOut className="w-4 h-4" />
+                {authLoading ? 'Logging out...' : 'Logout'}
+              </button>
             </div>
           </div>
         </div>
@@ -89,9 +96,9 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex gap-8">
             <button
-              onClick={() => handleTabChange('create')}
+              onClick={() => navigate('/create')}
               className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'create'
+                window.location.pathname === '/create'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
@@ -100,20 +107,26 @@ function App() {
               Create Appointment
             </button>
             <button
-              onClick={() => handleTabChange('manage')}
+              onClick={() => navigate('/manage')}
               className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'manage'
+                window.location.pathname === '/manage'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               <Settings className="w-4 h-4" />
               Manage Appointments
-              {appointments.length > 0 && (
-                <span className="ml-1 bg-blue-100 text-blue-600 py-0.5 px-2 rounded-full text-xs font-medium">
-                  {appointments.length}
-                </span>
-              )}
+            </button>
+            <button
+              onClick={() => navigate('/users')}
+              className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                window.location.pathname === '/users'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Users List
             </button>
           </nav>
         </div>
@@ -121,25 +134,12 @@ function App() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'create' ? (
-          <AppointmentCreator />
-        ) : (
-          <AppointmentManager />
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="bg-white border-t border-gray-200 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-600">
-              © 2025 Go High Level Appointment Booker. Built for professional use.
-            </p>
-            <div className="flex items-center gap-4 text-sm text-gray-500">
-              <span>Recurring appointments made easy</span>
-            </div>
-          </div>
-        </div>
+        <Routes>
+          <Route path="/create" element={<AppointmentCreator />} />
+          <Route path="/manage" element={<AppointmentManager />} />
+          <Route path="/users" element={<UsersList />} />
+          <Route path="*" element={<Navigate to="/create" replace />} />
+        </Routes>
       </div>
 
       {/* Notification Toast */}
