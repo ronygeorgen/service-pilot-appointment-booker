@@ -21,7 +21,7 @@ const uiSlice = createSlice({
     },
     addNotification: (state, action) => {
       const notification = {
-        id: crypto.randomUUID(),
+        id: Math.floor(1000000 + Math.random() * 9000000),
         timestamp: new Date().toISOString(),
         ...action.payload,
       };
