@@ -37,6 +37,9 @@ const [personSearch, setPersonSearch] = useState('');
   useEffect(()=>{
     setTitle('')
     setContactSearch('')
+    setAssignedPeopleUserIDs([])
+    dispatch(clearContacts());
+    dispatch(clearPeopleSuggestions());
   },[success])
 
   // Debounce API call
@@ -120,8 +123,6 @@ const [personSearch, setPersonSearch] = useState('');
           count: recurringPattern.repeatCount,   // renamed
         }),
     };
-
-    dispatch(createAppointment(appointmentData));
 
     console.log(appointmentData, 'appointmentData');
     
