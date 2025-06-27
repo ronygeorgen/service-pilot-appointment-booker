@@ -7,7 +7,8 @@ import {
   getRecurringGroupAppointments,
   deleteRecurringGroup,
   deleteSingleAppointment,
-  getAllRecurringAppointments
+  getAllRecurringAppointments,
+  getSingleAppointments
 } from '../../services/appointments_services';
 
 
@@ -35,6 +36,17 @@ export const loadAllRecurringAppointments = createAsyncThunk(
     try {
       const allRecurring = await getAllRecurringAppointments();
       return allRecurring;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const loadAllSingleAppointments = createAsyncThunk(
+  'appointments/loadAllSingleAppointments',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await getSingleAppointments();
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -212,7 +224,19 @@ const appointmentSlice = createSlice({
     error: null,
     lastUpdated: null,
     recurringGroups: [],
+    allsingleAppointments: [],
     loadedGroupAppointments: {},
+
+    singlePagination: {
+      next: null,
+      previous: null,
+      count: 0
+    },
+    recurringPagination: {
+      next: null,
+      previous: null,
+      count: 0
+    },
   },
   reducers: {
     clearContacts: (state) => {
@@ -239,6 +263,22 @@ const appointmentSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(loadAllSingleAppointments.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+          })
+      .addCase(loadAllSingleAppointments.fulfilled, (state, action) => {
+        state.allsingleAppointments = action?.payload?.results;
+        state.singlePagination = {
+          next: action.payload.next,
+          previous: action.payload.previous,
+          count: action.payload.count,
+        };
+      })
+      .addCase(loadAllSingleAppointments.rejected, (state, action) => {
+          state.loading = false;
+          state.error = action.payload;
+        })
       .addCase(deleteSingleAppointmentAPI.pending, (state) => {
           state.loading = true;
           state.error = null;
@@ -246,17 +286,9 @@ const appointmentSlice = createSlice({
         .addCase(deleteSingleAppointmentAPI.fulfilled, (state, action) => {
           state.loading = false;
           const deletedId = action.payload.api_id; // Use the numeric ID (118)
-          
-          // Remove from items if it exists there
-          state.items = state.items.filter(item => item.id !== deletedId);
-          
-          // Remove from any loaded group appointments
-          Object.keys(state.loadedGroupAppointments).forEach(groupId => {
-            state.loadedGroupAppointments[groupId] = 
-              state.loadedGroupAppointments[groupId].filter(
-                apt => apt.id !== deletedId
-              );
-          });
+          state.allsingleAppointments = state.allsingleAppointments = state.allsingleAppointments.filter(
+            appointment => appointment.id !== deletedId
+          );
         })
         .addCase(deleteSingleAppointmentAPI.rejected, (state, action) => {
           state.loading = false;
@@ -393,7 +425,7 @@ const appointmentSlice = createSlice({
       })
       .addCase(fetchRecurringGroups.fulfilled, (state, action) => {
         state.loading = false;
-        state.recurringGroups = action.payload || [];
+        state.recurringGroups = action.payload?.results || [];
       })
       .addCase(fetchRecurringGroups.rejected, (state, action) => {
         state.loading = false;

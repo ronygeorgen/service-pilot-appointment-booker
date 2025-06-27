@@ -50,3 +50,8 @@ export const getAllRecurringAppointments = async () => {
     appointments: appointmentsResponses[index].results
   }));
 };
+
+export const getSingleAppointments = async () => {
+  const response = await axiosInstance.get('/accounts/appointments/non-recurring/');
+  return response.data;
+};
