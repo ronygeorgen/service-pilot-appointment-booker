@@ -70,11 +70,10 @@ export const SimpleTimePicker = ({ value, onChange, placeholder = "Select time" 
 
   // Quick time presets
   const quickTimes = [
-    { label: '9:00 AM', hour: 9, minute: 0, period: 'AM' },
+    { label: '8:00 AM', hour: 8, minute: 0, period: 'AM' },
+    { label: '10:00 AM', hour: 10, minute: 0, period: 'AM' },
     { label: '12:00 PM', hour: 12, minute: 0, period: 'PM' },
-    { label: '1:00 PM', hour: 1, minute: 0, period: 'PM' },
-    { label: '3:00 PM', hour: 3, minute: 0, period: 'PM' },
-    { label: '5:00 PM', hour: 5, minute: 0, period: 'PM' },
+    { label: '2:00 PM', hour: 2, minute: 0, period: 'PM' },
   ];
 
   return (
