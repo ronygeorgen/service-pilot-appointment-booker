@@ -125,7 +125,11 @@ export const fetchRecurringGroupAppointments = createAsyncThunk(
   async (groupId, { rejectWithValue }) => {
     try {
       const response = await getRecurringGroupAppointments(groupId);
-      return { groupId, appointments: response.results };
+      return { 
+        groupId, 
+        appointments: response.results,
+        count: response.count // Include the count
+      };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -407,8 +411,11 @@ const appointmentSlice = createSlice({
       })
       .addCase(fetchRecurringGroupAppointments.fulfilled, (state, action) => {
         state.loading = false;
-        const { groupId, appointments } = action.payload;
-        state.loadedGroupAppointments[groupId] = appointments;
+        const { groupId, appointments, count } = action.payload;
+        state.loadedGroupAppointments[groupId] = {
+          items: appointments,
+          count: count // Store the count
+        };
       })
       .addCase(fetchRecurringGroupAppointments.rejected, (state, action) => {
         state.loading = false;
@@ -475,10 +482,10 @@ export const selectRecurringGroups = createSelector(
 
     // Process API-loaded recurring groups
     appointments.recurringGroups.forEach(group => {
-      const groupAppointments = appointments.loadedGroupAppointments[group.group_id] || [];
+      const groupData = appointments.loadedGroupAppointments[group.group_id] || {};
       
       // Create a new array for sorted appointments to avoid mutating state
-      const sortedAppointments = [...groupAppointments].sort((a, b) => {
+      const sortedAppointments = [...groupData].sort((a, b) => {
         const dateA = a.start_time ? new Date(a.start_time) : new Date(a.date);
         const dateB = b.start_time ? new Date(b.start_time) : new Date(b.date);
         return dateA - dateB;
@@ -494,6 +501,7 @@ export const selectRecurringGroups = createSelector(
           repeatCount: group.total_count
         },
         appointments: sortedAppointments,
+        appointments_count: groupData.count,
         assignedPeople: [group.contact_id],
         createdAt: group.created_at,
         updatedAt: group.updated_at,

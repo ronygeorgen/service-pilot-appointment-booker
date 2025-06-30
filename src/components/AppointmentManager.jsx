@@ -350,7 +350,7 @@ const formatTime = (timeString) => {
             </div>
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                {group.appointments.length} appointments
+                {group.appointments_count} appointments
               </span>
               {completedCount > 0 && (
                 <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">

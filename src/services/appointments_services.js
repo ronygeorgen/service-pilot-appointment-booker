@@ -19,7 +19,11 @@ export const getRecurringGroups = async () => {
 
 export const getRecurringGroupAppointments = async (groupId) => {
   const response = await axiosInstance.get(`/accounts/recurring-groups/${groupId}/appointments/`);
-  return response.data;
+  
+  return {
+    count: response.data.count, // Preserve the count from API
+    results: response.data.results
+  };
 };
 
 export const deleteRecurringGroup = async (groupId) => {
