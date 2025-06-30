@@ -23,7 +23,7 @@ export const AppointmentCreator = () => {
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringPattern, setRecurringPattern] = useState({
     frequency: 'weekly',
-    // interval: 1,
+    interval: 1,
     repeatCount: 10,
   });
 
@@ -119,6 +119,7 @@ const [personSearch, setPersonSearch] = useState('');
       userIds: [...assignedPeopleUserIDs],
       type: isRecurring ? 'recurring' : 'single',
         ...(isRecurring && {
+          every : recurringPattern.interval,
           interval: recurringPattern.frequency,  // renamed
           count: recurringPattern.repeatCount,   // renamed
         }),
@@ -147,7 +148,7 @@ const [personSearch, setPersonSearch] = useState('');
       setIsRecurring(false);
       setRecurringPattern({
         frequency: 'weekly',
-        // interval: 1,
+        interval: 1,
         repeatCount: 10,
       });
 
@@ -388,7 +389,7 @@ const [personSearch, setPersonSearch] = useState('');
                       <option value="monthly">Monthly</option>
                     </select>
                   </div>
-                  {/* <div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Every
                     </label>
@@ -404,7 +405,7 @@ const [personSearch, setPersonSearch] = useState('');
                       disabled={loading}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
                     />
-                  </div> */}
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Count

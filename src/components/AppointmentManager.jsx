@@ -12,13 +12,15 @@ import {
   fetchRecurringGroups,
   fetchRecurringGroupAppointments,
   deleteSingleAppointmentAPI,
-  loadAllRecurringAppointments
+  loadAllRecurringAppointments,
+  loadAllSingleAppointments
 } from '../store/slices/appointmentSlice';
 import { addNotification } from '../store/slices/uiSlice';
 
 export const AppointmentManager = () => {
   const dispatch = useAppDispatch();
   const { recurringGroups, singleAppointments } = useAppSelector(selectRecurringGroups);
+  const {allsingleAppointments, singlePagination  } = useAppSelector(state=>state.appointments)
   const loading = useAppSelector(selectAppointmentsLoading);
   
   const [editingId, setEditingId] = useState(null);
@@ -28,6 +30,7 @@ export const AppointmentManager = () => {
   // Load recurring groups on component mount
   useEffect(() => {
     dispatch(loadAllRecurringAppointments());
+    dispatch(loadAllSingleAppointments());
     dispatch(fetchRecurringGroups());
   }, [dispatch]);
 
@@ -260,20 +263,20 @@ const formatTime = (timeString) => {
           <div className="space-y-2 mb-4">
             <div className="flex items-center gap-2 text-gray-600">
               <Calendar className="w-4 h-4" />
-              <span className="text-sm">{formatDate(appointment.date)}</span>
+              <span className="text-sm">{formatDate(appointment.start_time)}</span>
             </div>
             <div className="flex items-center gap-2 text-gray-600">
               <Clock className="w-4 h-4" />
-              <span className="text-sm">{formatTime(appointment.time)}</span>
+              <span className="text-sm">{formatTime(appointment.start_time)}</span>
             </div>
             <div className="flex items-center gap-2 text-gray-600">
               <Users className="w-4 h-4" />
-              <span className="text-sm">{Array.isArray(appointment.assignedPeople) ? appointment.assignedPeople.join(', ') : appointment.assignedPeople}</span>
+              <span className="text-sm">{appointment.assigned_user_name}</span>
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <button
+          <div className="flex gap-2 justify-end">
+            {/* <button
               onClick={() => handleEdit(appointment)}
               disabled={loading}
               className="flex items-center gap-1 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
@@ -294,11 +297,10 @@ const formatTime = (timeString) => {
             >
               <CheckCircle className="w-4 h-4" />
               {appointment.status === 'completed' ? 'Undo' : 'Complete'}
-            </button>
+            </button> */}
             <button
               onClick={() => handleDeleteAppointment(
                 appointment.id, 
-
                 isInGroup
               )}
               disabled={loading}
@@ -388,7 +390,19 @@ const formatTime = (timeString) => {
     );
   };
 
-  const totalAppointments = singleAppointments.length + 
+  const handleNextSinglePage = () => {
+    if (singlePagination.next) {
+      dispatch(loadAllSingleAppointments(singlePagination.next));
+    }
+  };
+
+  const handlePreviousSinglePage = () => {
+    if (singlePagination.previous) {
+      dispatch(loadAllSingleAppointments(singlePagination.previous));
+    }
+  };
+
+  const totalAppointments = allsingleAppointments.length + 
     Object.values(recurringGroups).reduce((sum, group) => sum + group.appointments.length, 0);
 
   return (
@@ -423,12 +437,11 @@ const formatTime = (timeString) => {
         )}
 
         {/* Single Appointments */}
-        {singleAppointments.length > 0 && (
+        {allsingleAppointments.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Single Appointments</h3>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {singleAppointments
-                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              {allsingleAppointments
                 .map(appointment => (
                   <div key={appointment.id} className="bg-white rounded-xl shadow-lg p-6">
                     {renderAppointmentCard(appointment)}
@@ -437,6 +450,26 @@ const formatTime = (timeString) => {
             </div>
           </div>
         )}
+        {/* Single Appointments Pagination Controls */}
+        {(singlePagination.previous || singlePagination.next) && (
+          <div className="flex justify-center gap-4 mt-6">
+            <button
+              onClick={handlePreviousSinglePage}
+              disabled={!singlePagination.previous}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              onClick={handleNextSinglePage}
+              disabled={!singlePagination.next}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
 
         {totalAppointments === 0 && !loading && (
           <div className="text-center py-12">
