@@ -58,8 +58,8 @@ export const LoginPage = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl">
-              <Calendar className="w-12 h-12 text-white" />
+            <div className="flex items-center">
+                <img src="/ServicePilotLogoNavBar.png" alt="Service Pilot Logo" className="h-8 w-auto" />
             </div>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>

@@ -19,7 +19,7 @@ function App() {
   const locationId = params.get('locationId');
 
   const isIframed = window.self !== window.top;
-  const isAuthenticated = is_auth || (isIframed && locationId === 'b8qvo7VooP3JD3dIZU42');
+  const isAuthenticated = is_auth || (isIframed || locationId === 'b8qvo7VooP3JD3dIZU42');
 
   console.log(isAuthenticated, 'isAuthenticated');
   
@@ -74,12 +74,12 @@ function App() {
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl">
-                <Calendar className="w-8 h-8 text-white" />
-              </div>
+                <div className="flex items-center">
+                    <img src="/ServicePilotLogoNavBar.png" alt="Service Pilot Logo" className="h-8 w-auto" />
+                </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Go High Level</h1>
-                <p className="text-sm text-gray-600">Recurring Appointment Booker</p>
+                <h1 className="text-2xl font-bold text-gray-900">Appointment Setter</h1>
+                {/* <p className="text-sm text-gray-600">Appointment Booker</p> */}
               </div>
             </div>
 
