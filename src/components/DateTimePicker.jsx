@@ -17,14 +17,30 @@ export const DatePicker = ({ value, onChange, className = '' }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const formatDate = (date) => {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString('en-US', {
+  // const formatDate = (date) => {
+  //   if (!date) return '';
+  //   return new Date(date).toLocaleDateString('en-US', {
+  //     year: 'numeric',
+  //     month: 'short',
+  //     day: 'numeric'
+  //   });
+  // };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+
+    const [year, month, day] = dateString.split('-');
+
+    // Create Date at NOON to avoid shifting across zones
+    const safeDate = new Date(`${year}-${month}-${day}T12:00:00`);
+
+    return safeDate.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
+
 
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
@@ -49,13 +65,25 @@ export const DatePicker = ({ value, onChange, className = '' }) => {
     return days;
   };
 
-  const handleDateSelect = (date) => {
-  const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  console.log('new date not converted to timezone===', dateString);
+//   const handleDateSelect = (date) => {
+//   const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+//   console.log('new date not converted to timezone===', dateString);
   
-  onChange(dateString);
-  setIsOpen(false);
-};
+//   onChange(dateString);
+//   setIsOpen(false);
+// };
+
+    const handleDateSelect = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+
+      const dateString = `${year}-${month}-${day}`;  // pure date, no time
+      console.log('User selected (safe):', dateString);
+
+      onChange(dateString);
+      setIsOpen(false);
+    };
 
 
   const navigateMonth = (direction) => {
