@@ -19,17 +19,7 @@ export const DatePicker = ({ value, onChange, className = '' }) => {
 
   const formatDate = (date) => {
     if (!date) return '';
-    const d = new Date(date);
-    // Handle the case where the date string might be in YYYY-MM-DD format
-    if (isNaN(d.getTime())) {
-      const [year, month, day] = date.split('-');
-      return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    }
-    return d.toLocaleDateString('en-US', {
+    return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -39,8 +29,8 @@ export const DatePicker = ({ value, onChange, className = '' }) => {
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
-    const firstDay = new Date(year, month, 1, 12, 0, 0); // Set to noon to avoid timezone issues
-    const lastDay = new Date(year, month + 1, 0, 12, 0, 0);
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
 
@@ -51,51 +41,42 @@ export const DatePicker = ({ value, onChange, className = '' }) => {
       days.push(null);
     }
     
-    // Add all days of the month at noon to avoid timezone issues
+    // Add all days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      days.push(new Date(year, month, day, 12, 0, 0));
+      days.push(new Date(year, month, day));
     }
     
     return days;
   };
 
   const handleDateSelect = (date) => {
-    // Create date string in YYYY-MM-DD format without timezone conversion
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateString = `${year}-${month}-${day}`;
-    
-    onChange(dateString);
-    setIsOpen(false);
-  };
+  const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  console.log('new date not converted to timezone===', dateString);
+  
+  onChange(dateString);
+  setIsOpen(false);
+};
+
 
   const navigateMonth = (direction) => {
     setCurrentMonth(prev => {
       const newDate = new Date(prev);
       newDate.setMonth(prev.getMonth() + direction);
-      // Set to noon to avoid month shifting due to timezones
-      newDate.setHours(12, 0, 0, 0);
       return newDate;
     });
   };
 
   const isToday = (date) => {
-    if (!date) return false;
     const today = new Date();
-    today.setHours(12, 0, 0, 0); // Normalize to noon
-    return date.getDate() === today.getDate() &&
+    return date && 
+           date.getDate() === today.getDate() &&
            date.getMonth() === today.getMonth() &&
            date.getFullYear() === today.getFullYear();
   };
 
   const isSelected = (date) => {
     if (!value || !date) return false;
-    
-    // Parse the stored value (YYYY-MM-DD format)
-    const [year, month, day] = value.split('-');
-    const selectedDate = new Date(year, month - 1, day, 12, 0, 0);
-    
+    const selectedDate = new Date(value);
     return date.getDate() === selectedDate.getDate() &&
            date.getMonth() === selectedDate.getMonth() &&
            date.getFullYear() === selectedDate.getFullYear();
@@ -185,11 +166,7 @@ export const DatePicker = ({ value, onChange, className = '' }) => {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => {
-                const today = new Date();
-                today.setHours(12, 0, 0, 0); // Normalize to noon
-                handleDateSelect(today);
-              }}
+              onClick={() => handleDateSelect(new Date())}
               className="px-3 py-2 text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50 transition-colors font-medium text-sm"
             >
               Today
