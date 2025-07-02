@@ -101,14 +101,26 @@ const [personSearch, setPersonSearch] = useState('');
       return;
     }
 
-    const start = DateTime.fromFormat(
-      `${date} ${time}`,
-      'yyyy-MM-dd HH:mm',
-      { zone: 'America/Chicago' }
-    );
+    function calculateEndTime(time, durationMinutes = 30) {
+      const [h, m] = time.split(':').map(Number);
+      const end = new Date(0, 0, 0, h, m + durationMinutes);
+      const hours = end.getHours().toString().padStart(2, '0');
+      const minutes = end.getMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
 
-    const startDateTime = start.toUTC().toISO();
-    const endDateTime = start.plus({ minutes: 30 }).toUTC().toISO();
+    const startDateTime = `${date}T${time}:00`;
+    const endDateTime = `${date}T${calculateEndTime(time)}:00`;
+
+
+    // const start = DateTime.fromFormat(
+    //   `${date} ${time}`,
+    //   'yyyy-MM-dd HH:mm',
+    //   { zone: 'America/Chicago' }
+    // );
+
+    // const startDateTime = start.toUTC().toISO();
+    // const endDateTime = start.plus({ minutes: 30 }).toUTC().toISO();
 
     const appointmentData = {
       title,

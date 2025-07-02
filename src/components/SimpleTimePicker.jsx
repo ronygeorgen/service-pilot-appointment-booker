@@ -32,16 +32,15 @@ export const SimpleTimePicker = ({ value, onChange, placeholder = "Select time" 
   }, [value]);
 
   const formatDisplayTime = (timeString) => {
-    if (!timeString) return '';
-    const [hours, minutes] = timeString.split(':');
-    const date = new Date();
-    date.setHours(parseInt(hours), parseInt(minutes));
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    });
-  };
+  if (!timeString) return '';
+  const [h, m] = timeString.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${m.toString().padStart(2, '0')} ${period}`;
+};
+
+
+
 
   const handleTimeSelect = (hour, minute, period) => {
     let hour24 = hour;
@@ -211,16 +210,15 @@ export const NativeTimePicker = ({ value, onChange, placeholder = "Select time" 
   const [isFocused, setIsFocused] = useState(false);
 
   const formatDisplayTime = (timeString) => {
-    if (!timeString) return '';
-    const [hours, minutes] = timeString.split(':');
-    const date = new Date();
-    date.setHours(parseInt(hours), parseInt(minutes));
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    });
-  };
+  if (!timeString) return '';
+  const [h, m] = timeString.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${m.toString().padStart(2, '0')} ${period}`;
+};
+
+
+
 
   return (
     <div className="relative">
