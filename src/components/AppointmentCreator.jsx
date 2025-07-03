@@ -101,23 +101,17 @@ const [personSearch, setPersonSearch] = useState('');
       return;
     }
 
-    function calculateEndTime(time, durationMinutes = 30) {
-      const [h, m] = time.split(':').map(Number);
-      const end = new Date(0, 0, 0, h, m + durationMinutes);
-      const hours = end.getHours().toString().padStart(2, '0');
-      const minutes = end.getMinutes().toString().padStart(2, '0');
-      return `${hours}:${minutes}`;
-    }
+    // function calculateEndTime(time, durationMinutes = 30) {
+    //   const [h, m] = time.split(':').map(Number);
+    //   const end = new Date(0, 0, 0, h, m + durationMinutes);
+    //   const hours = end.getHours().toString().padStart(2, '0');
+    //   const minutes = end.getMinutes().toString().padStart(2, '0');
+    //   return `${hours}:${minutes}`;
+    // }
 
     // const startDateTime = `${date}T${time}:00`;
     // const endDateTime = `${date}T${calculateEndTime(time)}:00`;
 
-    const start = DateTime.fromFormat(`${date} ${time}`, 'yyyy-MM-dd HH:mm');
-    const adjustedStart = start.plus({ hours: 5 }); // Add 5 hours
-    const adjustedEnd = adjustedStart.plus({ minutes: 30 }); // Add 30 mins for end time
-
-    const startDateTime = adjustedStart.toISO();  // e.g., 2025-07-05T10:30:00.000Z
-    const endDateTime = adjustedEnd.toISO();      // e.g., 2025-07-05T11:00:00.000Z
 
 
 
@@ -129,6 +123,40 @@ const [personSearch, setPersonSearch] = useState('');
 
     // const startDateTime = start.toUTC().toISO();
     // const endDateTime = start.plus({ minutes: 30 }).toUTC().toISO();
+
+    function calculateEndTime(time, durationMinutes = 30) {
+    const [h, m] = time.split(':').map(Number);
+    const end = new Date(0, 0, 0, h, m + durationMinutes);
+    const hours = end.getHours().toString().padStart(2, '0');
+    const minutes = end.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }
+
+  // Function to add hours to a date and time, handling day overflow
+  function addHoursToDateTime(dateStr, timeStr, hoursToAdd) {
+    // Create a Date object from the date and time
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    
+    const dateTime = new Date(year, month - 1, day, hours, minutes);
+    dateTime.setHours(dateTime.getHours() + hoursToAdd);
+    
+    // Format the new date and time
+    const newDate = `${dateTime.getFullYear()}-${(dateTime.getMonth() + 1).toString().padStart(2, '0')}-${dateTime.getDate().toString().padStart(2, '0')}`;
+    const newTime = `${dateTime.getHours().toString().padStart(2, '0')}:${dateTime.getMinutes().toString().padStart(2, '0')}`;
+    
+    return { date: newDate, time: newTime };
+  }
+
+  // Original end time calculation
+  const originalEndTime = calculateEndTime(time);
+
+  // Add 5 hours to both start and end times, handling date changes
+  const adjustedStart = addHoursToDateTime(date, time, 5);
+  const adjustedEnd = addHoursToDateTime(date, originalEndTime, 5);
+
+  const startDateTime = `${adjustedStart.date}T${adjustedStart.time}:00`;
+  const endDateTime = `${adjustedEnd.date}T${adjustedEnd.time}:00`;
 
     const appointmentData = {
       title,
