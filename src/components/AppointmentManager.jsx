@@ -263,11 +263,11 @@ const formatTime = (timeString) => {
           <div className="space-y-2 mb-4">
             <div className="flex items-center gap-2 text-gray-600">
               <Calendar className="w-4 h-4" />
-              <span className="text-sm">{formatDate(appointment.start_time)}</span>
+              <span className="text-sm">{formatDate(appointment.adjusted_start_time)}</span>
             </div>
             <div className="flex items-center gap-2 text-gray-600">
               <Clock className="w-4 h-4" />
-              <span className="text-sm">{formatTime(appointment.start_time)}</span>
+              <span className="text-sm">{formatTime(appointment.adjusted_start_time)}</span>
             </div>
             <div className="flex items-center gap-2 text-gray-600">
               <Users className="w-4 h-4" />
@@ -378,8 +378,8 @@ const formatTime = (timeString) => {
             {group.appointments.map(appointment => renderAppointmentCard({
               ...appointment,
               id: appointment.id,
-              date: appointment.start_time ? appointment.start_time.split('T')[0] : appointment.date,
-              time: appointment.start_time ? appointment.start_time.split('T')[1].substring(0, 5) : appointment.time,
+              date: appointment.adjusted_start_time ? appointment.adjusted_start_time.split('T')[0] : appointment.date,
+              time: appointment.adjusted_start_time ? appointment.adjusted_start_time.split('T')[1].substring(0, 5) : appointment.time,
               assignedPeople: appointment.assigned_to || appointment.assignedPeople,
               status: appointment.status || 'scheduled',
               recurringId: group.id
