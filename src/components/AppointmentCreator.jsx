@@ -109,8 +109,16 @@ const [personSearch, setPersonSearch] = useState('');
       return `${hours}:${minutes}`;
     }
 
-    const startDateTime = `${date}T${time}:00`;
-    const endDateTime = `${date}T${calculateEndTime(time)}:00`;
+    // const startDateTime = `${date}T${time}:00`;
+    // const endDateTime = `${date}T${calculateEndTime(time)}:00`;
+
+    const start = DateTime.fromFormat(`${date} ${time}`, 'yyyy-MM-dd HH:mm');
+    const adjustedStart = start.plus({ hours: 5 }); // Add 5 hours
+    const adjustedEnd = adjustedStart.plus({ minutes: 30 }); // Add 30 mins for end time
+
+    const startDateTime = adjustedStart.toISO();  // e.g., 2025-07-05T10:30:00.000Z
+    const endDateTime = adjustedEnd.toISO();      // e.g., 2025-07-05T11:00:00.000Z
+
 
 
     // const start = DateTime.fromFormat(

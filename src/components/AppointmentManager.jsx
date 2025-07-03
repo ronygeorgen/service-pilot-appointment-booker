@@ -402,7 +402,7 @@ const formatTime = (timeString) => {
     }
   };
 
-  const totalAppointments = allsingleAppointments.length + 
+  const totalAppointments = allsingleAppointments?.length + 
     Object.values(recurringGroups).reduce((sum, group) => sum + group.appointments.length, 0);
 
   return (
@@ -437,12 +437,12 @@ const formatTime = (timeString) => {
         )}
 
         {/* Single Appointments */}
-        {allsingleAppointments.length > 0 && (
+        {allsingleAppointments?.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Single Appointments</h3>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {allsingleAppointments
-                .map(appointment => (
+                ?.map(appointment => (
                   <div key={appointment.id} className="bg-white rounded-xl shadow-lg p-6">
                     {renderAppointmentCard(appointment)}
                   </div>
